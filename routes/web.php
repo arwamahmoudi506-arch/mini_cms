@@ -15,3 +15,10 @@ Route::get('/bonjour-court', fn () => 'Même résultat, écrit avec une fonction
 Route::get('/version', function () {
     return 'Laravel ' . app()->version() . ' - PHP ' . PHP_VERSION;
 });
+
+Route::get('/a-propos', function () {
+    return view('a-propos', [
+        'auteur' => 'Arwa Mahmoudi',
+        'groupe' => 'MDW32',
+    ]);
+});
