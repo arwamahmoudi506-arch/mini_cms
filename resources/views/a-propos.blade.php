@@ -16,7 +16,7 @@
     </p>
 
     <p class="mt-6">
-        <a href="/heure" class="text-red-600 underline">
+        <a href="{{ route('time') }}" class="text-red-600 underline">
             Heure du serveur
         </a>
     </p>
