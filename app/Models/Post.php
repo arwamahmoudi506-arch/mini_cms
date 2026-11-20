@@ -21,4 +21,5 @@ class Post extends Model
             'published_at' => 'datetime',
         ];
     }
-}
+}git add -A
+git diff lab-03 --stat -- database/migrations
