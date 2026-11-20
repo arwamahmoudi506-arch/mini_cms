@@ -1,75 +1,24 @@
-# Mini CMS — Projet Laravel
+## État actuel (tag lab-03)
 
-## Informations sur le projet
+- Articles enregistrés dans une base SQLite et lus avec le modèle Eloquent `Post`.
+- Table `posts` créée par une migration : après un clone, `php artisan migrate` la recrée (vide).
+- Liste paginée, détail par liaison modèle-route, formulaire de création avec validation côté serveur.
+- Premiers tests Pest : `php artisan test`.
 
-- **Étudiante :** Arwa Mahmoudi
-- **Groupe :** MDW33
-- **Framework :** Laravel
-- **Dépôt GitHub :** https://github.com/arwamahmoudi506-arch/mini_cms
+## Routes disponibles
 
-## Description
+| Méthode | URI | Nom | Action |
+|---|---|---|---|
+| GET | `/` | `home` | `PageController@home` |
+| GET | `/a-propos` | `about` | `PageController@about` |
+| GET | `/heure` | `time` | `PageController@time` |
+| GET | `/posts` | `posts.index` | `PostController@index` |
+| GET | `/posts/archive/{year}` | `posts.archive` | `PostController@archive` |
+| GET | `/posts/create` | `posts.create` | `PostController@create` |
+| POST | `/posts` | `posts.store` | `PostController@store` |
+| GET | `/posts/{post}` | `posts.show` | `PostController@show` |
+### Session 05
 
-Ce projet est réalisé dans le cadre des travaux pratiques de Git et Laravel. Il permet de découvrir la gestion des versions avec Git et de créer des routes et des pages web avec Laravel.
+![Liste paginée des articles](screenshots/s05-articles.png)
 
-## Pages réalisées
-
-- `/` : page d'accueil
-- `/bonjour` : page Bonjour
-- `/bonjour-court` : page Bonjour courte
-- `/version` : informations sur la version
-- `/a-propos` : page À propos du projet
-
-## Captures d'écran
-
-### Page d'accueil
-
-![Page d'accueil](screenshots/s01-accueil.png)
-
-### Page Bienvenue
-
-![Page Bienvenue](screenshots/s01-bienvenue.png)
-
-### Liste des routes
-
-![Liste des routes](screenshots/s01-route-list.png)
-
-### Page À propos
-
-![Page À propos](screenshots/s02-a-propos.png)
-
-## Installation
-
-### Prérequis
-
-- PHP
-- Composer
-- Node.js et npm
-- Git
-
-### Étapes d'installation
-
-```bash
-git clone https://github.com/arwamahmoudi506-arch/mini_cms.git
-cd mini-cms
-composer install
-npm install
-cp .env.example .env
-php artisan key:generate
-```
-
-Créer la base de données SQLite, puis exécuter les migrations :
-
-```bash
-touch database/database.sqlite
-php artisan migrate
-```
-
-Lancer le projet :
-
-```bash
-composer run dev
-```
-
-## État du projet
-
-La page À propos a été ajoutée et enregistrée dans Git. Le projet continue d'évoluer au fil des séances pratiques.
+![Formulaire avec erreurs de validation](screenshots/s05-formulaire.png)
