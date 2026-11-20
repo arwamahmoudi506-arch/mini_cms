@@ -9,6 +9,7 @@ class Post extends Model
     protected $fillable = [
         'title',
         'slug',
+        'excerpt',
         'body',
         'is_published',
         'published_at',
@@ -21,5 +22,4 @@ class Post extends Model
             'published_at' => 'datetime',
         ];
     }
-}git add -A
-git diff lab-03 --stat -- database/migrations
+}
