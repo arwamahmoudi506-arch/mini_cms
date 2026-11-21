@@ -4,10 +4,11 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use App\Models\Post;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 class Tag extends Model
 {
+    /** @use HasFactory<\Database\Factories\TagFactory> */
     use HasFactory;
 
     protected $fillable = [
@@ -15,8 +16,8 @@ class Tag extends Model
         'slug',
     ];
 
-    public function posts()
+    public function posts(): BelongsToMany
     {
-        return $this->belongsToMany(Post::class);
+        return $this->belongsToMany(Post::class)->withTimestamps();
     }
 }

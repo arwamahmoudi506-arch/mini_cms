@@ -12,12 +12,13 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('post_tag', function (Blueprint $table) {
-    $table->foreignId('post_id')->constrained()->cascadeOnDelete();
-    $table->foreignId('tag_id')->constrained()->cascadeOnDelete();
+            $table->id();
+            $table->foreignId('post_id')->constrained()->cascadeOnDelete();
+            $table->foreignId('tag_id')->constrained()->cascadeOnDelete();
+            $table->timestamps();
 
-    $table->primary(['post_id', 'tag_id']);
-});
-  
+            $table->unique(['post_id', 'tag_id']);
+        });
     }
 
     /**
@@ -28,4 +29,3 @@ return new class extends Migration
         Schema::dropIfExists('post_tag');
     }
 };
-    
