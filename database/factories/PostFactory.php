@@ -11,18 +11,22 @@ use Illuminate\Support\Str;
  */
 class PostFactory extends Factory
 {
+    /**
+     * Define the model's default state.
+     *
+     * @return array<string, mixed>
+     */
     public function definition(): array
     {
-        $title = fake()->sentence(4);
+        $title = rtrim(fake()->unique()->sentence(4), '.');
 
         return [
             'title' => $title,
             'slug' => Str::slug($title),
-            'excerpt' => fake()->sentence(),
+            'excerpt' => fake()->optional()->sentence(12),
             'body' => fake()->paragraphs(3, true),
             'is_published' => false,
             'published_at' => null,
-            'category_id' => null,
         ];
     }
 
@@ -30,7 +34,7 @@ class PostFactory extends Factory
     {
         return $this->state(fn (array $attributes) => [
             'is_published' => true,
-            'published_at' => now(),
+            'published_at' => fake()->dateTimeBetween('-1 year'),
         ]);
     }
 }
