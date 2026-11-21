@@ -1,12 +1,13 @@
 ## État actuel (tag lab-04)
 
-- Articles enregistrés dans une base SQLite et lus avec le modèle Eloquent `Post`.
-- Table `posts` créée par une migration : après un clone, `php artisan migrate` la recrée (vide).
-- Liste paginée, détail par liaison modèle-route, formulaire de création avec validation côté serveur.
-- Catégories, tags (table pivot `post_tag`) et relations Eloquent.
-- Fabriques `Post`, `Category` et `Tag`.
-- Tests Pest : `php artisan test`.
+- Modèles `Category` et `Tag` reliés à `Post` : un article a une catégorie et un auteur (1:N) et plusieurs tags (N:N, table pivot `post_tag`).
+- Fabriques `PostFactory` (état `published()`), `CategoryFactory`, `TagFactory` et seeders pour un jeu de données réaliste.
+- Chargement anticipé avec `with()` ; `Model::preventLazyLoading()` signale tout problème N+1 hors production.
+- Tests Pest : `PostPagesTest`, `PostWriteTest` et `PostRelationsTest`.
 
+## Données de démonstration
+
+Après un clone, reconstruire la base avec `php artisan migrate:fresh --seed`. Attention : cette commande vide la base avant de la remplir.
 ## Routes disponibles
 
 | Méthode | URI | Nom | Action |
