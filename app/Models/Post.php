@@ -1,53 +1,118 @@
 <?php
 
-namespace App\Models;
+namespace App\Http\Controllers;
 
-use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use App\Models\Category;
+use App\Models\Post;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
+use Illuminate\View\View;
 
-class Post extends Model
+class PostController extends Controller
 {
-    /** @use HasFactory<\Database\Factories\PostFactory> */
-    use HasFactory;
-
-    protected $fillable = [
-        'title',
-        'slug',
-        'excerpt',
-        'body',
-        'is_published',
-        'published_at',
-        'category_id',
-    ];
-
-    protected function casts(): array
+    public function index(): View
     {
-        return [
-            'is_published' => 'boolean',
-            'published_at' => 'datetime',
-        ];
+        return view('posts.index', [
+            'heading' => 'Tous les articles',
+            'posts' => Post::with('user', 'category', 'tags')->latest('id')->paginate(4),
+        ]);
     }
 
-    public function user(): BelongsTo
+    public function archive(string $year): View
     {
-        return $this->belongsTo(User::class);
+        return view('posts.index', [
+            'heading' => 'Articles de '.$year,
+            'posts' => Post::published()->with('user', 'category', 'tags')->whereYear('published_at', $year)->latest('id')->paginate(4),
+        ]);
     }
 
-    public function category(): BelongsTo
+    public function create(): View
     {
-        return $this->belongsTo(Category::class);
+        return view('posts.create', [
+            'categories' => Category::orderBy('name')->get(),
+        ]);
     }
 
-    public function tags(): BelongsToMany
+    public function store(Request $request): RedirectResponse
     {
-        return $this->belongsToMany(Tag::class)->withTimestamps();
+        $validated = $request->validate([
+            'title' => ['required', 'string', 'max:255'],
+            'slug' => ['required', 'string', 'max:255', 'regex:/^[a-z0-9-]+$/', 'unique:posts,slug'],
+            'excerpt' => ['nullable', 'string', 'max:255'],
+            'body' => ['required', 'string', 'min:20'],
+            'is_published' => ['nullable', 'boolean'],
+            'category_id' => ['nullable', 'integer', 'exists:categories,id'],
+        ]);
+
+        $validated['is_published'] = $request->boolean('is_published');
+        $validated['published_at'] = $validated['is_published'] ? now() : null;
+
+        $post = Post::create($validated);
+
+        return redirect()->route('posts.show', $post);
     }
 
-    public function scopePublished(Builder $query): void
+    public function show(Post $post): View
     {
-        $query->where('is_published', true);
+        $post->load('user', 'category', 'tags');
+
+        $related = $post->category
+            ? $post->category->posts()
+                ->published()
+                ->where('id', '!=', $post->id)
+                ->with('user', 'category', 'tags')
+                ->latest('published_at')
+                ->take(3)
+                ->get()
+            : collect();
+
+        return view('posts.show', compact('post', 'related'));
+    }
+
+    public function edit(Post $post): View
+    {
+        return view('posts.edit', [
+            'post' => $post,
+            'categories' => Category::orderBy('name')->get(),
+        ]);
+    }
+
+    public function update(Request $request, Post $post): RedirectResponse
+    {
+        $validated = $request->validate([
+            'title' => ['required', 'string', 'max:255'],
+            'slug' => ['required', 'string', 'max:255', 'regex:/^[a-z0-9-]+$/', Rule::unique('posts', 'slug')->ignore($post)],
+            'excerpt' => ['nullable', 'string', 'max:255'],
+            'body' => ['required', 'string', 'min:20'],
+            'is_published' => ['nullable', 'boolean'],
+            'category_id' => ['nullable', 'integer', 'exists:categories,id'],
+        ]);
+
+        $validated['is_published'] = $request->boolean('is_published');
+        $validated['published_at'] = $validated['is_published'] ? ($post->published_at ?? now()) : null;
+
+        $post->update($validated);
+
+        return redirect()->route('posts.show', $post);
+    }
+
+    public function destroy(Post $post): RedirectResponse
+    {
+        $post->delete();
+
+        return redirect()->route('posts.index');
+    }
+
+    public function togglePublication(Post $post): RedirectResponse
+    {
+        $isPublished = ! $post->is_published;
+
+        $post->update([
+            'is_published' => $isPublished,
+            'published_at' => $isPublished ? now() : null,
+        ]);
+
+        return redirect()->route('posts.show', $post);
     }
 }
