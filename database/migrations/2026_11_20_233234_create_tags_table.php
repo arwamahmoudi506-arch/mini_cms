@@ -20,27 +20,7 @@ return new class extends Migration
     {
         Schema::dropIfExists('tags');
     }
-};<?php
-
-namespace Database\Seeders;
-
-use App\Models\Post;
-use App\Models\Tag;
-use Illuminate\Database\Seeder;
-
-class DatabaseSeeder extends Seeder
-{
-    public function run(): void
-    {
-        $this->call([
-            CategorySeeder::class,
-            TagSeeder::class,
-        ]);
-
-        $tags = Tag::all();
-
-        Post::factory()->count(8)->create()->each(function ($post) use ($tags) {
-            $post->tags()->attach($tags->random(rand(1, 3)));
-        });
-    }
 }
+
+
+
