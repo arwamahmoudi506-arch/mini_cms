@@ -3,9 +3,11 @@
 use App\Models\Category;
 use App\Models\Post;
 use App\Models\Tag;
+use App\Models\User;
 
 beforeEach(function () {
     $this->withoutVite();
+    $this->actingAs(User::factory()->admin()->create());
 });
 
 function taxonomyPostData(array $overrides = []): array
@@ -88,6 +90,7 @@ it('counts the published posts of each category on the home page', function () {
         ->assertOk()
         ->assertSee('Tutoriels (2)');
 });
+
 it('lists the published posts of a tag by its slug', function () {
     $tag = Tag::factory()->create(['name' => 'Astuce', 'slug' => 'astuce']);
     $published = Post::factory()->published()->create(['title' => 'Astuce publiee']);
