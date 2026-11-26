@@ -1,12 +1,22 @@
-## État actuel (tag lab-08)
+# Mini-CMS
 
-- `GET /api/categories` et `GET /api/categories/{category}`, avec le nombre d'articles publiés de chaque catégorie.
-- `GET /api/posts?category=<slug>&tag=<slug>` : filtres par catégorie et par tag, comparaison exacte, slug inconnu refusé (422).
-- `POST /api/login` renvoie un jeton Sanctum ; `POST /api/logout` le révoque.
-- `POST`, `PUT/PATCH` et `DELETE /api/posts` protégés par `auth:sanctum`, avec les mêmes Form Requests et la même `PostPolicy` que le site (401, 403 et 422 en JSON).
-- Tests Pest `ApiReadTest` et `ApiWriteTest`.
+## Description
 
-## Routes disponibles
+Mini-CMS est une petite plateforme de publication écrite avec Laravel 13 pendant l'Atelier Framework Côté Serveur. Elle a deux portes vers les mêmes données : un site web (pages Blade, back-office, comptes) et une API JSON REST protégée par des jetons Sanctum. Le projet s'installe et se teste sur SQLite.
+
+## Fonctionnalités
+
+- Articles : liste paginée, détail, archive par année, pages publiques par catégorie (`/posts/categorie/{slug}`) et par tag (`/posts/tag/{slug}`), articles de la même catégorie sur la page d'un article.
+- Écriture : création, modification, suppression, publication et dépublication d'un article, avec catégorie et tags ; validation dans des Form Requests (`StorePostRequest`, `UpdatePostRequest`) et messages en français (`lang/fr/validation.php`).
+- Accueil : derniers articles publiés, catégories et tags populaires comptés avec `withCount`.
+- Comptes écrits à la main : inscription, connexion (« Se souvenir de moi »), déconnexion, page « Mes articles ».
+- Autorisations : un auteur modifie et supprime ses propres articles, un administrateur tous les articles (`PostPolicy`, `Gate::before`) ; un brouillon n'est visible que par son auteur et les administrateurs.
+- Back-office `/admin`, réservé aux administrateurs (middleware `admin`) : catégories, tags et rôles des utilisateurs.
+- Robustesse : messages flash, mode lecture seule (`SITE_READ_ONLY=true` dans `.env` : toute écriture répond 503), pages 404, 503, « Article introuvable » et « Catégorie introuvable » dans le layout du site.
+- API JSON : articles, catégories et tags en lecture, filtres `?category=` et `?tag=`, écritures des articles avec un jeton Sanctum.
+- Tests Pest : `php artisan test` couvre les pages, les écritures, les autorisations et l'API.
+
+### Routes du site
 
 | Méthode | URI | Nom | Action |
 |---|---|---|---|
@@ -24,6 +34,12 @@
 | PUT | `/posts/{post}` | `posts.update` | `PostController@update` |
 | DELETE | `/posts/{post}` | `posts.destroy` | `PostController@destroy` |
 | PATCH | `/posts/{post}/publication` | `posts.publication` | `PostController@togglePublication` |
+| GET | `/mes-articles` | `my-posts` | `PostController@myPosts` |
+| GET | `/inscription` | `register` | `Auth\RegisterController@create` |
+| POST | `/inscription` | `register.store` | `Auth\RegisterController@store` |
+| GET | `/connexion` | `login` | `Auth\LoginController@create` |
+| POST | `/connexion` | `login.store` | `Auth\LoginController@store` |
+| POST | `/deconnexion` | `logout` | `Auth\LoginController@destroy` |
 | GET | `/admin/categories` | `admin.categories.index` | `CategoryController@index` |
 | GET | `/admin/categories/create` | `admin.categories.create` | `CategoryController@create` |
 | POST | `/admin/categories` | `admin.categories.store` | `CategoryController@store` |
@@ -36,23 +52,120 @@
 | GET | `/admin/tags/{tag}/edit` | `admin.tags.edit` | `TagController@edit` |
 | PUT | `/admin/tags/{tag}` | `admin.tags.update` | `TagController@update` |
 | DELETE | `/admin/tags/{tag}` | `admin.tags.destroy` | `TagController@destroy` |
-| GET | `/inscription` | `register` | `Auth\RegisterController@create` |
-| POST | `/inscription` | `register.store` | `Auth\RegisterController@store` |
-| GET | `/connexion` | `login` | `Auth\LoginController@create` |
-| POST | `/connexion` | `login.store` | `Auth\LoginController@store` |
-| POST | `/deconnexion` | `logout` | `Auth\LoginController@destroy` |
-| GET | `/mes-articles` | `my-posts` | `PostController@myPosts` |
 | GET | `/admin/utilisateurs` | `admin.users.index` | `UserController@index` |
 | PATCH | `/admin/utilisateurs/{user}/role` | `admin.users.role` | `UserController@updateRole` |
-| GET | `/api/posts` | `api.posts.index` | `Api\PostController@index` |
-| GET | `/api/posts/{post}` | `api.posts.show` | `Api\PostController@show` |
-| GET | `/api/categories` | `api.categories.index` | `Api\CategoryController@index` |
-| GET | `/api/categories/{category}` | `api.categories.show` | `Api\CategoryController@show` |
-| POST | `/api/login` | `api.login` | `Api\AuthController@login` |
-| POST | `/api/logout` | `api.logout` | `Api\AuthController@logout` |
-| POST | `/api/posts` | `api.posts.store` | `Api\PostController@store` |
-| PUT/PATCH | `/api/posts/{post}` | `api.posts.update` | `Api\PostController@update` |
-| DELETE | `/api/posts/{post}` | `api.posts.destroy` | `Api\PostController@destroy` |
+
+## Installation
+
+Prérequis : PHP 8.3 ou plus récent (avec l'extension `pdo_sqlite`), Composer 2, Node.js et Git. Le projet utilise SQLite : aucun serveur de base de données n'est nécessaire.
+
+### Bash
+
+```bash
+git clone https://github.com/arwamahmoudi506-arch/mini_cms.git mini-cms
+cd mini-cms
+composer install
+npm install
+npm run build
+cp .env.example .env
+php artisan key:generate
+php artisan migrate:fresh --seed
+php artisan test
+composer run dev
+```
+
+### PowerShell
+
+```powershell
+git clone https://github.com/arwamahmoudi506-arch/mini_cms.git mini-cms
+cd mini-cms
+composer install
+npm install
+npm run build
+copy .env.example .env
+php artisan key:generate
+php artisan migrate:fresh --seed
+php artisan test
+composer run dev
+```
+
+Si `php artisan migrate:fresh --seed` demande de créer le fichier `database/database.sqlite`, répondez `yes`. Le site s'ouvre ensuite sur http://localhost:8000 et l'API sur http://localhost:8000/api/posts. Attention : `migrate:fresh` vide la base avant de la remplir.
+
+## Comptes de test
+
+Créés par `php artisan migrate:fresh --seed` :
+
+| Rôle | Adresse e-mail | Mot de passe |
+|---|---|---|
+| Administrateur | `test@example.com` | `password` |
+| Auteur | `auteur@example.com` | `password` |
+
+Le seeder crée aussi un second auteur avec une adresse aléatoire (mot de passe `password`), 3 catégories, des tags et 12 articles (9 publiés, 3 brouillons).
+
+## API
+
+Toutes les adresses commencent par `/api`. Envoyez toujours l'en-tête `Accept: application/json` : l'API répond en JSON, y compris pour les erreurs.
+
+### Endpoints
+
+| Méthode | URI | Nom | Action | Jeton |
+|---|---|---|---|---|
+| GET | `/api/posts` | `api.posts.index` | `Api\PostController@index` | non |
+| GET | `/api/posts/{post}` | `api.posts.show` | `Api\PostController@show` | non |
+| GET | `/api/categories` | `api.categories.index` | `Api\CategoryController@index` | non |
+| GET | `/api/categories/{category}` | `api.categories.show` | `Api\CategoryController@show` | non |
+| GET | `/api/tags` | `api.tags.index` | `Api\TagController@index` | non |
+| GET | `/api/tags/{tag}` | `api.tags.show` | `Api\TagController@show` | non |
+| POST | `/api/login` | `api.login` | `Api\AuthController@login` | non |
+| POST | `/api/logout` | `api.logout` | `Api\AuthController@logout` | oui |
+| POST | `/api/posts` | `api.posts.store` | `Api\PostController@store` | oui |
+| PUT/PATCH | `/api/posts/{post}` | `api.posts.update` | `Api\PostController@update` | oui |
+| DELETE | `/api/posts/{post}` | `api.posts.destroy` | `Api\PostController@destroy` | oui |
+| GET | `/api/user` | (aucun) | fonction dans `routes/api.php` | oui |
+
+- `GET /api/posts` renvoie les articles publiés, paginés (`data`, `links`, `meta`). Paramètres facultatifs : `per_page` (1 à 50, 5 par défaut), `category` (slug d'une catégorie) et `tag` (slug d'un tag) ; un slug inconnu est refusé avec 422.
+- `GET /api/posts/{post}` ajoute le contenu complet (`body`) ; un brouillon répond 403.
+- `/api/categories` et `/api/tags` renvoient une clé `data` sans pagination, avec `posts_count` (articles publiés seulement).
+- Une collection Postman prête à importer est dans `docs/postman/mini-cms.postman_collection.json` (elle ne contient aucun jeton).
+
+### Authentification par jeton
+
+1. `POST /api/login` avec un corps JSON `{"email": "test@example.com", "password": "password"}`. La réponse 201 contient `token` et `token_type` (`Bearer`). Le jeton n'est affiché qu'une fois : la base n'en garde que l'empreinte.
+2. Envoyez ce jeton dans l'en-tête `Authorization: Bearer VOTRE_JETON` pour les requêtes marquées « oui » ci-dessus.
+3. `POST /api/logout` avec le même en-tête révoque ce jeton seulement (réponse 204) ; les autres jetons du même compte restent valides. Un jeton n'expire pas par défaut.
+
+Les écritures appliquent les mêmes règles que le site : un auteur ne modifie et ne supprime que ses propres articles, un administrateur tous les articles.
+
+### Codes d'erreur
+
+| Code | Sens | Exemple |
+|---|---|---|
+| 401 | jeton absent ou révoqué | `POST /api/posts` sans `Authorization` : `{"message": "Unauthenticated."}` |
+| 403 | client connu mais refusé | `PUT /api/posts/{post}` sur l'article d'un autre auteur, ou `GET` d'un brouillon : `{"message": "This action is unauthorized."}` |
+| 404 | ressource introuvable | `GET /api/posts/999` : `{"message": "No query results for model [App\\Models\\Post] 999"}` |
+| 422 | données ou paramètres invalides | `GET /api/posts?per_page=500` : `message` et `errors`, en français |
+
+L'ordre des vérifications est toujours le même : `auth:sanctum` (401), liaison du modèle (404), autorisation (403), validation (422), puis le contrôleur (200, 201 ou 204).
+
+### Exemple curl.exe
+
+Lister deux articles publiés :
+
+```bash
+curl.exe -s -H "Accept: application/json" "http://localhost:8000/api/posts?per_page=2"
+```
+
+Obtenir un jeton :
+
+```bash
+curl.exe -s -X POST -H "Accept: application/json" -H "Content-Type: application/json" -d "{\"email\":\"test@example.com\",\"password\":\"password\"}" http://localhost:8000/api/login
+```
+
+Révoquer ce jeton (remplacez `VOTRE_JETON` par la valeur de `token` ; la réponse 204 n'a pas de corps) :
+
+```bash
+curl.exe -X POST -H "Accept: application/json" -H "Authorization: Bearer VOTRE_JETON" http://localhost:8000/api/logout
+```
 
 ## Captures d'écran
 
@@ -122,15 +235,29 @@ Back-office des catégories et des tags, messages de validation en français, pa
 
 ### Session 13
 
-![Postman : réponse JSON de GET /api/posts?per_page=2, avec data, links et meta](screenshots/s13-postman-liste.png)
+![Réponse de l'API (navigateur) : réponse JSON de GET /api/posts?per_page=2, avec data, links et meta](screenshots/s13-postman-liste.png)
 
-![Postman : réponse 422 de GET /api/posts?per_page=500, avec le message en français](screenshots/s13-postman-422.png)
+![Réponse de l'API (navigateur) : réponse 422 de GET /api/posts?per_page=500, avec le message en français](screenshots/s13-postman-422.png)
 
 ### Session 14
 
-![Postman : POST /api/posts avec un jeton Bearer, onglet Body, réponse 201 Created](screenshots/s14-postman-201.png)
+![Réponse de l'API (navigateur) : POST /api/posts avec un jeton Bearer, onglet Body, réponse 201 Created](screenshots/s14-postman-201.png)
 
-![Postman : PUT sur l'article d'un autre auteur, réponse 403](screenshots/s14-postman-403.png)
+![Réponse de l'API (navigateur) : PUT sur l'article d'un autre auteur, réponse 403](screenshots/s14-postman-403.png)
+
+## Choix d'architecture
+
+### Pourquoi les écritures de l'API passent par PostPolicy
+
+Le site et l'API sont deux portes vers les mêmes articles. `Api\PostController` réutilise donc `StorePostRequest`, `UpdatePostRequest` et `PostPolicy`, au lieu d'écrire ses propres règles : une seule règle décide qui peut créer, modifier ou supprimer un article. Si cette règle change, le site et l'API changent ensemble, et l'API ne peut pas devenir un raccourci qui contourne les droits du site. L'autorisation (`authorize()`) passe aussi avant la validation : un client refusé reçoit 403 sans rien apprendre des règles.
+
+### Pourquoi preventLazyLoading est activé
+
+Une relation lue dans une boucle sans chargement anticipé (`with()`) lance une requête SQL par élément : c'est le problème N+1, invisible mais lent. `Model::preventLazyLoading(! app()->isProduction())` dans `AppServiceProvider` transforme ce problème en erreur visible en développement et pendant les tests, ce qui oblige chaque contrôleur à charger ses relations. En production, l'option est désactivée pour ne jamais casser une page devant un utilisateur.
+
+### Pourquoi l'API utilise des jetons et non la session
+
+Le groupe de routes `api` n'a ni session ni cookie : il répond à chaque requête sans se souvenir de la précédente. Un client qui n'est pas un navigateur (application mobile, script, Postman) ne garde pas de cookie de session et n'a pas de jeton CSRF ; il présente donc un jeton Sanctum à chaque requête. Chaque appareil a son propre jeton, que l'on peut révoquer seul (`/api/logout`) sans déconnecter les autres, et la base n'en garde que l'empreinte.
 
 ## Comparaison avec le starter kit Livewire
 
